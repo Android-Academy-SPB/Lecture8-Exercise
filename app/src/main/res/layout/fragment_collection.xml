@@ -1,39 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    tools:background="#000000">
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="16dp"
+              tools:background="#000000">
 
-  <TextView
-      android:id="@+id/fragment_collection_name"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:gravity="center"
-      android:textAppearance="@style/TextAppearance.AppCompat.Large.Inverse"
-      tools:text="Collection name"
-      />
+    <TextView
+        android:id="@+id/fragment_collection_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large.Inverse"
+        tools:text="Collection name"
+        />
 
-  <ImageView
-      android:id="@+id/fragment_collection_preview_image"
-      android:layout_width="match_parent"
-      android:layout_height="0dp"
-      android:layout_weight="1"
-      android:layout_marginBottom="16dp"
-      android:layout_marginTop="16dp"
-      android:scaleType="centerCrop"
-      />
+    <ImageView
+        android:id="@+id/fragment_collection_preview_image"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1"
+        android:scaleType="centerCrop"
+        />
 
-  <TextView
-      android:id="@+id/fragment_collection_description"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginBottom="20dp"
-      android:gravity="center"
-      android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse"
-      tools:text="collection description"
-      />
+    <TextView
+        android:id="@+id/fragment_collection_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse"
+        tools:text="collection description"
+        />
+
+    <com.like.LikeButton
+        android:id="@+id/like_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|right"
+        app:icon_size="24dp"
+        app:icon_type="heart"
+        app:liked="false"/>
 </LinearLayout>

@@ -11,12 +11,19 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.like.LikeButton;
+import com.like.OnLikeListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import spb.android.academy.fragments.domain.Collection;
 import spb.android.academy.fragments.domain.Photo;
+import spb.android.academy.fragments.network.NetworkManager;
 
 public class CollectionFragment extends Fragment {
 
@@ -27,6 +34,7 @@ public class CollectionFragment extends Fragment {
     private TextView nameTextView;
     private TextView descriptionTextView;
     private ImageView previewImage;
+    private LikeButton likeButton;
 
     private Collection collection;
 
@@ -55,6 +63,7 @@ public class CollectionFragment extends Fragment {
         nameTextView = view.findViewById(R.id.fragment_collection_name);
         descriptionTextView = view.findViewById(R.id.fragment_collection_description);
         previewImage = view.findViewById(R.id.fragment_collection_preview_image);
+        likeButton = view.findViewById(R.id.like_button);
 
         return view;
     }
@@ -81,6 +90,19 @@ public class CollectionFragment extends Fragment {
                 }
             }
         });
+
+        likeButton.setLiked(collection.getCoverPhoto().isLiked());
+        likeButton.setOnLikeListener(new OnLikeListener() {
+            @Override
+            public void liked(LikeButton likeButton) {
+                performLikeOrUnlike(true);
+            }
+
+            @Override
+            public void unLiked(LikeButton likeButton) {
+                performLikeOrUnlike(false);
+            }
+        });
     }
 
     @Override
@@ -95,6 +117,33 @@ public class CollectionFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         listener = null;
+    }
+
+    private void performLikeOrUnlike(boolean isLike) {
+        // TODO : it's very complicated for us to stand against clicking ddos, so let it be so
+        likeButton.setEnabled(false);
+
+        String photoId = collection.getCoverPhoto().getId();
+
+        final Callback<ResponseBody> callback = new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                likeButton.setEnabled(true);
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                likeButton.setEnabled(true);
+
+                // TODO : schedule retry for request
+            }
+        };
+
+        if (isLike) {
+            NetworkManager.getApiInstance().likePhoto(photoId).enqueue(callback);
+        } else {
+            NetworkManager.getApiInstance().unlikePhoto(photoId).enqueue(callback);
+        }
     }
 
     public interface CollectionFragmentListener {

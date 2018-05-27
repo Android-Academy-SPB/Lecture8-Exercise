@@ -16,6 +16,8 @@ public class Collection {
     private String title;
     @SerializedName("description")
     private String description;
+    @SerializedName("cover_photo")
+    private CoverPhoto coverPhoto;
     @SerializedName("preview_photos")
     private List<Photo> previewPhotos;
     @SerializedName("links")
@@ -31,6 +33,11 @@ public class Collection {
 
     public String getDescription() {
         return description;
+    }
+
+    @NonNull
+    public CoverPhoto getCoverPhoto() {
+        return coverPhoto;
     }
 
     @NonNull
