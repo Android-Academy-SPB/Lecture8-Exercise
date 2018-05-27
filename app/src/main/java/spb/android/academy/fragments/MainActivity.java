@@ -9,7 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 
 import spb.android.academy.fragments.auth.AuthActivity;
-import spb.android.academy.fragments.storage.PreferencesProvider;
+import spb.android.academy.fragments.storage.StorageProvider;
 
 public class MainActivity extends AppCompatActivity implements CollectionFragment.CollectionFragmentListener {
 
@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity implements CollectionFragmen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String token = PreferencesProvider.getPreferences().getSavedToken();
+        String token = StorageProvider.getPreferences().getSavedToken();
         if (TextUtils.isEmpty(token)) {
             AuthActivity.startForResult(this);
             return;
@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements CollectionFragmen
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == AuthActivity.AUTH_REQUEST_CODE) {
             String token = data.getStringExtra(AuthActivity.TOKEN_KEY);
-            PreferencesProvider.getPreferences().saveToken(token);
+            StorageProvider.getPreferences().saveToken(token);
             openFragment(MainFragment.newInstance(), false);
         }
     }

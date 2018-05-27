@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,13 +18,24 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import androidx.work.Constraints;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import spb.android.academy.fragments.common.Executors;
+import spb.android.academy.fragments.common.UiThreadHandler;
 import spb.android.academy.fragments.domain.Collection;
 import spb.android.academy.fragments.domain.Photo;
 import spb.android.academy.fragments.network.NetworkManager;
+import spb.android.academy.fragments.scheduler.LikeSyncWorker;
+import spb.android.academy.fragments.storage.StorageProvider;
+import spb.android.academy.fragments.storage.database.LikeDao;
+import spb.android.academy.fragments.storage.database.LikeRequest;
 
 public class CollectionFragment extends Fragment {
 
@@ -119,12 +131,43 @@ public class CollectionFragment extends Fragment {
         listener = null;
     }
 
-    private void performLikeOrUnlike(boolean isLike) {
+    private void performLikeOrUnlike(final boolean isLike) {
         // TODO : it's very complicated for us to stand against clicking ddos, so let it be so
         likeButton.setEnabled(false);
 
-        String photoId = collection.getCoverPhoto().getId();
+        final String photoId = collection.getCoverPhoto().getId();
+        Executors.commonExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                LikeDao likeDao = StorageProvider.getAppDatabase().likeDao();
+                LikeRequest cachedLikeRequest = likeDao.findLikeRequest(photoId);
 
+                if (cachedLikeRequest == null) {
+                    final LikeRequest likeRequest = new LikeRequest();
+                    likeRequest.setPhotoId(photoId);
+                    likeRequest.setLike(isLike);
+                    UiThreadHandler.get().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            executeLikeRequest(likeRequest);
+                        }
+                    });
+                } else if (cachedLikeRequest.isLike() != isLike) {
+                    // no need to execute request anymore, it's cancelled by user
+                    likeDao.deleteRequest(cachedLikeRequest);
+                    UiThreadHandler.get().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            likeButton.setEnabled(true);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    @UiThread
+    private void executeLikeRequest(@NonNull final LikeRequest likeRequest) {
         final Callback<ResponseBody> callback = new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -135,15 +178,33 @@ public class CollectionFragment extends Fragment {
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 likeButton.setEnabled(true);
 
-                // TODO : schedule retry for request
+                Executors.commonExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        StorageProvider.getAppDatabase().likeDao().addRequest(likeRequest);
+                    }
+                });
+                scheduleSyncWorkIfNeeded();
             }
         };
 
-        if (isLike) {
-            NetworkManager.getApiInstance().likePhoto(photoId).enqueue(callback);
+        if (likeRequest.isLike()) {
+            NetworkManager.getApiInstance().likePhoto(likeRequest.getPhotoId()).enqueue(callback);
         } else {
-            NetworkManager.getApiInstance().unlikePhoto(photoId).enqueue(callback);
+            NetworkManager.getApiInstance().unlikePhoto(likeRequest.getPhotoId()).enqueue(callback);
         }
+    }
+
+    private void scheduleSyncWorkIfNeeded() {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        WorkRequest request = new OneTimeWorkRequest.Builder(LikeSyncWorker.class)
+                .setConstraints(constraints)
+                .build();
+
+        WorkManager.getInstance().enqueue(request);
     }
 
     public interface CollectionFragmentListener {
